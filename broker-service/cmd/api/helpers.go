@@ -16,7 +16,7 @@ type jsonResponse struct{
 }
 
 
-func (app *Config) ReadJSON(w http.ResponseWriter  , r *http.Request , data any) error {
+func (app *Config) readJSON(w http.ResponseWriter  , r *http.Request , data any) error {
 	maxBytes := 1048576  // 1 Mb
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
 	dec:=json.NewDecoder(r.Body)
@@ -32,7 +32,7 @@ if err !=io.EOF {
 return nil
 }
 
-func (app *Config) WriteJSON(w http.ResponseWriter  , status int , data any , headers ...http.Header) error {
+func (app *Config) writeJSON(w http.ResponseWriter  , status int , data any , headers ...http.Header) error {
 	out , err :=json.Marshal(data)
 	if err != nil {
 		return err
@@ -61,6 +61,6 @@ func (app *Config) errorJSON(w http.ResponseWriter  , err error , status ...int)
 var payload jsonResponse
 payload.Error = true
 payload.Message = err.Error()
-return  app.WriteJSON(w, statusCode, payload)
+return  app.writeJSON(w, statusCode, payload)
 }
 
