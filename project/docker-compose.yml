@@ -1,26 +1,21 @@
 version: '3.8'
 
 services:
-  broker-service: 
+  broker-service:
     build:
       context: ./../broker-service
-      dockerfile: ./../broker-service/broker-service.dockerFile 
+      dockerfile: broker-service.Dockerfile
     restart: always
     ports:
       - "8080:8080"
-    deploy:
-      mode: replicated
-      replicas: 1
-  
+
   authentication-service:
     build:
       context: ./../authentication-service
-      dockerfile: ./../authentication-service/authentication-service.dockerFile
+      dockerfile: authentication-service.Dockerfile
     restart: always
     ports:
       - "8081:8081"
-    deploy:
-      mode: replicated
-      replicas: 1
     environment:
-      - DSN=postgresql://neondb_owner:npg_cVwRfym2n8lb@ep-blue-base-adcmddes-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - DSN=postgresql://neondb_owner:npg_cVwRfym2n8lb@ep-blue-base-adcmddes-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+
