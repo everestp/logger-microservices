@@ -9,7 +9,7 @@ import (
 )
 
 
-func (ap *Config) routes() http.Handler {
+func (app *Config) routes() http.Handler {
 	mux := chi.NewRouter()
 	// specific who is allowed to   connect
  mux.Use(cors.Handler(cors.Options{
@@ -22,6 +22,7 @@ func (ap *Config) routes() http.Handler {
     }))
 
 mux.Use(middleware.Heartbeat("/ping"))
-mux.Post("/", ap.Broker)
+mux.Post("/", app.Broker)
+mux.Post("/handler", app.HandlerSubmission)
 return  mux
 }
