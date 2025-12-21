@@ -8,35 +8,22 @@ import (
 	"github.com/go-chi/cors"
 )
 
+
 func (app *Config) routes() http.Handler {
 	mux := chi.NewRouter()
 
-	// CORS
+	// specify who is allowed to connect
 	mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // allow all for testing
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders: []string{"Link"},
 		AllowCredentials: true,
-		MaxAge:           300,
+		MaxAge: 300,
 	}))
 
 	mux.Use(middleware.Heartbeat("/ping"))
 
-	// Auth route
-	mux.Post("/authenticate", app.Authenticate) // fixed spelling
-
-	// GET / route
-	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Auth service is running!"))
-	})
-
-	// POST / route
-	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("POST request received!"))
-	})
-
+	mux.Post("/authenticate", app.Authenticate)
 	return mux
 }
