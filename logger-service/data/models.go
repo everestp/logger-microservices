@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -80,4 +81,73 @@ func (l *LogEntry) All() ([]*LogEntry, error) {
 	}
 
 	return logs, nil
+}
+
+
+
+func (l *LogEntry) GetOne(id string) (*LogEntry , error ){
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	collection := client.Database("logs").Collection("logs")
+
+	docID , err := primitive.ObjectIDFromHex(id)
+	if err != nil{
+		return nil, err
+	}
+
+	var entry LogEntry
+	err = collection.FindOne(ctx, bson.M{"_id": docID}).Decode(&entry)
+	if err != nil {
+		return nil, err
+	}
+
+	return  &entry , nil
+
+}
+
+func (l *LogEntry) DropCollection() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	collection :=client.Database("logs").Collection("logs")
+	if err := collection.Drop(ctx); err != nil{
+		return  err
+	}
+	return nil
+} 
+
+
+func (l *LogEntry) Update() (*mongo.UpdateResult, error) {
+	// 1. Create a context with a timeout for the database operation
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	collection := client.Database("logs").Collection("logs")
+
+	// 2. Convert the string ID to a MongoDB ObjectID
+	docID, err := primitive.ObjectIDFromHex(l.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Execute the Update
+	// bson.M for the filter (unordered is fine here)
+	// bson.D for the update (ordered slices of elements)
+	result, err := collection.UpdateOne(ctx,
+		bson.M{"_id": docID},
+		bson.D{
+			{Key: "$set", Value: bson.D{
+				{Key: "name", Value: l.Name},
+				{Key: "data", Value: l.Data},
+				{Key: "updated_at", Value: time.Now()},
+			}},
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Return the result so the caller can check ModifiedCount
+	return result, nil
 }
