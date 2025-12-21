@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   broker-service:
     build:
@@ -19,3 +17,13 @@ services:
     environment:
       - DSN=postgresql://neondb_owner:npg_cVwRfym2n8lb@ep-blue-base-adcmddes-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
 
+  logger-service:
+    build:
+      context: ./../logger-service
+      dockerfile: logger-service.Dockerfile
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      # Inject your Atlas URI here
+      - MONGODB_URI=""
