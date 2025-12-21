@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
+	"github.com/everestp/log-service/data"
+	"github.com/everestp/log-service/env"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -12,14 +16,14 @@ import (
 const (
 	webPort ="8082"
 	rpcPort ="5001"
-	mongoUrl=""
+	
 )
 
 var client *mongo.Client
-
+var mongoUrl = env.GetString("MONGODB_URI", "")
 
 type Config struct {
-
+ Models data.Models
 }
 
 func main(){
@@ -42,8 +46,34 @@ func main(){
 		
 	}()
 	
+app := Config{
+	Models: data.New(client),
+}
+
+// start web server
+go app.server()
+
+
 
 }
+
+func (app *Config) server(){
+	srv := &http.Server{
+		Addr:fmt.Sprintf(":%s", webPort),
+		Handler: app.routes(),
+		
+	}
+
+	err :=srv.ListenAndServe()
+	if err != nil{
+		panic(err)
+	}
+}
+
+
+
+
+
 
 func connectToMongo() (*mongo.Client , error){
 	// create connection options
