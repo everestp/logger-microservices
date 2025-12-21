@@ -8,6 +8,7 @@ import (
 
 
 func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Authenticate handler hit!")
 	var requestPayload struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
@@ -40,3 +41,10 @@ func (app *Config) Authenticate(w http.ResponseWriter, r *http.Request) {
 
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
+
+
+// func (app *Config) logRequest(name , data string) error {
+// 	var entry struct {
+// 		Name string
+// 	}
+// }

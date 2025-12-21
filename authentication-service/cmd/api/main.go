@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	// "os"
+	
 	"time"
 _ "github.com/jackc/pgconn"
 _ "github.com/jackc/pgx/v4"
@@ -59,9 +60,9 @@ func openDB(dsn string) (*sql.DB , error){
 
 }
 func connectTODB() *sql.DB {
-	dsn :=os.Getenv("DSN")
+	// dsn :=os.Getenv("DSN")
 	for {
-		connection ,err :=openDB(dsn)
+		connection ,err :=openDB("postgresql://neondb_owner:npg_cVwRfym2n8lb@ep-blue-base-adcmddes-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
 		if err != nil{
   log.Println("Postgres not yet ready")
   count++

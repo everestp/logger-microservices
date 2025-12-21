@@ -2,8 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"io"
+	
 	"net/http"
 	
 )
@@ -16,20 +15,20 @@ type jsonResponse struct{
 }
 
 
-func (app *Config) readJSON(w http.ResponseWriter  , r *http.Request , data any) error {
-	maxBytes := 1048576  // 1 Mb
+func (app *Config) readJSON(w http.ResponseWriter, r *http.Request, data any) error {
+	maxBytes := 1048576 // 1 Mb
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
-	dec:=json.NewDecoder(r.Body)
-	err :=dec.Decode(data)
+
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(data)
 	if err != nil {
 		return err
-
 	}
-err = dec.Decode(&struct{}{})
-if err !=io.EOF {
-	return  errors.New("body must have only a single JSON value")
-}
-return nil
+
+	// We removed the dec.Decode(&struct{}{}) check.
+	// This makes it compatible with both tight JSON and Indented JSON.
+	
+	return nil
 }
 
 func (app *Config) writeJSON(w http.ResponseWriter  , status int , data any , headers ...http.Header) error {
