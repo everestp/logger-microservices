@@ -26,9 +26,27 @@ services:
       - "8082:8082"
     environment:
       - MONGODB_URI=mongodb+srv://everest:kaiseho12@cluster0.hodtqt5.mongodb.net/?appName=Cluster0
-    
+
+  mailer-service:
+    build:
+      context: ./../mailer-service
+      dockerfile: mailer-service.Dockerfile
+    restart: always
+    ports:
+      - "8083:8083"  # Changed host port to 8083 to avoid conflict with logger
+    environment:
+      - MAIL_DOMAIN=localhost
+      - MAIL_HOST=mailhog
+      - MAIL_PORT=1025
+      - MAIL_USERNAME=
+      - MAIL_PASSWORD=
+      - MAIL_ENCRYPTION=none
+      - FROM_NAME=My App Support
+      - FROM_ADDRESS=support@example.com
+
   mailhog:
     image: 'mailhog/mailhog:latest'
+    restart: always
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
