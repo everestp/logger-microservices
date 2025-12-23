@@ -33,20 +33,20 @@ services:
       dockerfile: mailer-service.Dockerfile
     restart: always
     ports:
-      - "8083:8083"  # Changed host port to 8083 to avoid conflict with logger
+      - "8083:8083" # Host 8083 -> Container 8083
     environment:
       - MAIL_DOMAIN=localhost
       - MAIL_HOST=mailhog
       - MAIL_PORT=1025
-      - MAIL_USERNAME=
-      - MAIL_PASSWORD=
+      - MAIL_USERNAME=""
+      - MAIL_PASSWORD=""
       - MAIL_ENCRYPTION=none
-      - FROM_NAME=My App Support
-      - FROM_ADDRESS=support@example.com
+      - FROM_NAME="My App Support"
+      - FROM_ADDRESS="support@example.com"
 
   mailhog:
     image: 'mailhog/mailhog:latest'
     restart: always
     ports:
-      - "1025:1025" # SMTP server
-      - "8025:8025" # Web UI
+      - "1025:1025" 
+      - "8025:8025"

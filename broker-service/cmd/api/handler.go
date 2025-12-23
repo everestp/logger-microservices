@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"net/http"
 )
 
+// RequestPayload defines the incoming JSON structure from the frontend
 type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
@@ -41,6 +41,8 @@ func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	_ = app.writeJSON(w, http.StatusOK, payload)
 }
 
+
+
 func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	var requestPayload RequestPayload
 	err := app.readJSON(w, r, &requestPayload)
@@ -61,60 +63,13 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
-	// Use Marshal (not MarshalIndent) to avoid trailing newline issues
-	jsonData, _ := json.Marshal(a)
+func (app *Config) SendMail(w http.ResponseWriter, msg MailPayload) {
+	jsonData, _ := json.Marshal(msg)
 
-	// Call the service with internal port 8081
-	authServiceURL := "http://authentication-service:8081/authenticate"
+	// URL matches the service name and internal port in docker-compose
+	mailServiceURL := "http://mailer-service:8083/send"
 
-	request, err := http.NewRequest("POST", authServiceURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode == http.StatusUnauthorized {
-		app.errorJSON(w, errors.New("invalid credentials"))
-		return
-	} else if response.StatusCode != http.StatusAccepted {
-		app.errorJSON(w, fmt.Errorf("auth service returned status %d", response.StatusCode))
-		return
-	}
-
-	var jsonFromService jsonResponse
-	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
-	if err != nil {
-		app.errorJSON(w, err)
-		return
-	}
-
-	if jsonFromService.Error {
-		app.errorJSON(w, errors.New(jsonFromService.Message), http.StatusUnauthorized)
-		return
-	}
-
-	var payload jsonResponse
-	payload.Error = false
-	payload.Message = "Authenticated!"
-	payload.Data = jsonFromService.Data
-
-	app.writeJSON(w, http.StatusAccepted, payload)
-}
-
-func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
-	jsonData, _ := json.Marshal(entry)
-	logServiceURL := "http://logger-service:8082/log"
-
-	request, err := http.NewRequest("POST", logServiceURL, bytes.NewBuffer(jsonData))
+	request, err := http.NewRequest("POST", mailServiceURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		app.errorJSON(w, err)
 		return
@@ -129,30 +84,27 @@ func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
 	}
 	defer response.Body.Close()
 
-	// Accept both 200 and 202 to be safe
-	if response.StatusCode != http.StatusAccepted && response.StatusCode != http.StatusOK {
-		app.errorJSON(w, fmt.Errorf("logger service returned status %d", response.StatusCode))
+	if response.StatusCode != http.StatusAccepted {
+		app.errorJSON(w, errors.New("error calling mailer service"))
 		return
 	}
 
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "logged"
+	payload.Message = "Message sent to " + msg.To
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
 
-func (app *Config) SendMail(w http.ResponseWriter, msg MailPayload) {
-	jsonData, _ := json.MarshalIndent(msg, "", "\t")
+func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
+	jsonData, _ := json.Marshal(a)
+	url := "http://authentication-service:8081/authenticate"
 
-	//call the mail service
-	mailServiceURL := "http://mailer-service/send"
-	// post to mail service
-	request, err := http.NewRequest("POST", mailServiceURL, bytes.NewBuffer(jsonData))
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		app.errorJSON(w, err)
 		return
 	}
-	request.Header.Set("Content-type", "application/json")
+
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
@@ -161,15 +113,42 @@ func (app *Config) SendMail(w http.ResponseWriter, msg MailPayload) {
 	}
 	defer response.Body.Close()
 
-	// make sure we get back the risght status code
 	if response.StatusCode != http.StatusAccepted {
-		app.errorJSON(w, errors.New("Error calling mailer service"))
+		app.errorJSON(w, errors.New("invalid credentials"))
 		return
 	}
 
-	//send back json
 	var payload jsonResponse
 	payload.Error = false
-	payload.Message = "Messege sent to" + msg.To
+	payload.Message = "Authenticated!"
+	app.writeJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
+	jsonData, _ := json.Marshal(entry)
+	url := "http://logger-service:8082/log"
+
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		app.errorJSON(w, errors.New("log service failed"))
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "logged"
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
