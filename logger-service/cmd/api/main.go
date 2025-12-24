@@ -1,17 +1,18 @@
-
 package main
 
 import (
-    "context"
-    "fmt"
-    "log"
-    "net/http"
-    "time"
+	"context"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"net/rpc"
+	"time"
 
-    "github.com/everestp/log-service/data"
-    "github.com/everestp/log-service/env"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/everestp/log-service/data"
+	"github.com/everestp/log-service/env"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -50,9 +51,10 @@ func main() {
     app := Config{
         Models: data.New(client),
     }
-
+	// Register the RPC server
+	err = rpc.Register(new(RPCServer))
+    go app.rpclisten()
     // start web server
-    // Removed "go" keyword so the main process waits for the server to finish
     app.server() 
 }
 
@@ -68,6 +70,27 @@ func (app *Config) server() {
         panic(err)
     }
 }
+
+func (app *Config) rpclisten() error{
+	log.Println("Starting RPC server on port", rpcPort)
+	listen , err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", rpcPort))
+	if err != nil{
+		return err
+	}
+
+	defer listen.Close()
+	for {
+		rpcConn , err :=listen.Accept()
+		if err != nil {
+			continue
+
+		}
+		go rpc.ServeConn(rpcConn)
+	}
+}
+
+
+
 
 func connectToMongo() (*mongo.Client, error) {
     // create connection options

@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"net/http"
+	"net/rpc"
 
 	"github.com/everestp/broker-service/event"
 )
@@ -57,7 +58,7 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
-		app.logEventViaRabbit(w, requestPayload.Log)
+		app.logITemViaRPC(w, requestPayload.Log)
 	case "mail":
 		app.SendMail(w, requestPayload.Mail)
 	default:
@@ -168,7 +169,10 @@ payload.Message ="logged via rabbitmq"
 app.writeJSON(w, http.StatusAccepted, payload)
 }
 
+
+//pushToQueue pushes a message to RabbitMQ
 func (app *Config) pushTOQueue(name , msg string) error {
+
 	emitter , err :=event.NewEventEmmiter(app.RabbitMQ)
 	if err != nil {
 		return err
@@ -185,4 +189,28 @@ func (app *Config) pushTOQueue(name , msg string) error {
 	}
 	return nil
 
+}
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func(app *Config) logITemViaRPC(w http.ResponseWriter , l LogPayload) {
+	client , err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil{
+		app.errorJSON(w, err )
+		return
+	}
+	rpcPayload :=RPCPayload(l)
+	var result string
+	err = client.Call("RPCServer.LogInfo",rpcPayload, &result)
+	if err != nil{
+		app.errorJSON(w, err)
+     return
+	}
+	paylod :=jsonResponse{
+		Error: false,
+		Message: result,
+	}
+	app.writeJSON(w, http.StatusAccepted, paylod)
 }
