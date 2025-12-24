@@ -33,7 +33,7 @@ services:
       dockerfile: mailer-service.Dockerfile
     restart: always
     ports:
-      - "8083:8083" # Host 8083 -> Container 8083
+      - "8083:8083"
     environment:
       - MAIL_DOMAIN=localhost
       - MAIL_HOST=mailhog
@@ -43,6 +43,14 @@ services:
       - MAIL_ENCRYPTION=none
       - FROM_NAME="My App Support"
       - FROM_ADDRESS="support@example.com"
+
+  listener-service: # Fixed spelling and quote
+    build:
+      context: ./../listener-service # Fixed spacing and spelling
+      dockerfile: listener-service.Dockerfile
+    deploy: 
+      mode: replicated
+      replicas: 1 # Added space after colon
   
   mailhog:
     image: 'mailhog/mailhog:latest'
@@ -52,13 +60,12 @@ services:
       - "8025:8025"
     
   rabbitmq:
-    image: 'rabbitmq:3.9-alpine'
+    image: 'rabbitmq:3.9-management-alpine' # Suggestion: use management tag for UI
     ports:
       - "5672:5672"
+      - "15672:15672" # RabbitMQ Management UI port
     deploy:
       mode: replicated
       replicas: 1
     volumes:
       - ./db-data/rabbitmq/:/var/lib/rabbitmq/
-
-    

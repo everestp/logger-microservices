@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	
 	"log"
 	"math"
 	"os"
 	"time"
 
+	"github.com/everestp/listener-service/event"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 func main(){
@@ -17,13 +19,21 @@ func main(){
 		os.Exit(1)
 	}
 	defer rabbitConn.Close()
-log.Println("Connected to rabbitmq")
+ // log.Println("Connected to rabbitmq")
 	//start listening for message
-
+log.Println("Listening for and consuming RabbitMQ messages....")
    
 	//create  consumer
-
+  consumner , err :=event.NewConsumer(rabbitConn)
+  if err != nil {
+	panic(err)
+  }
 	//watch the queue and consume the event
+   err = consumner.Listen([]string{"log.INFO","log.WARNING","log.ERROR"})
+    if err != nil {
+	panic(err)
+  }
+
 
 }
 
@@ -35,7 +45,7 @@ func connect() (*amqp.Connection , error){
 
 	//do not continue until rabbitmq is  ready
 	for {
-		c , err :=amqp.Dial("amqp://guest:guest@localhost")
+		c , err :=amqp.Dial("amqp://guest:guest@rabbitmq")
 		if err != nil {
 			fmt.Println("RabbitMQ not yet ready....")
 			count++
