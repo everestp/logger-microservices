@@ -13,5 +13,5 @@ message LogResponse {
     string result =1 ;
 }
 service LogService {
-    rpc WriteLog(LogRequest) returns (LogResponse)
+    rpc WriteLog(LogRequest) returns (LogResponse);
 }
