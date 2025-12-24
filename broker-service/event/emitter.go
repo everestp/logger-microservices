@@ -3,7 +3,7 @@ package event
 import (
 	"log"
 
-	"github.com/everestp/broker-service/event"
+	
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 type Emitter struct {
@@ -29,7 +29,7 @@ func(e *Emitter) Push(event string , severity string) error {
 	}
 	defer channel.Close()
 	log.Println("Pushing to channel")
-	err = channel.Publish("log_topic", severity, false, false, amqp.Publishing{
+	err = channel.Publish("logs_topic", severity, false, false, amqp.Publishing{
 		ContentType: "text/plain",
 		Body: []byte(event),
 	})
