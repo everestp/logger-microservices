@@ -2,13 +2,18 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"net/http"
 	"net/rpc"
 
 	"github.com/everestp/broker-service/event"
+	"github.com/everestp/broker-service/logs"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // RequestPayload defines the incoming JSON structure from the frontend
@@ -213,4 +218,43 @@ func(app *Config) logITemViaRPC(w http.ResponseWriter , l LogPayload) {
 		Message: result,
 	}
 	app.writeJSON(w, http.StatusAccepted, paylod)
+}
+
+
+func (app *Config) LogViaGRPC(w http.ResponseWriter, r *http.Request) {
+	var requestPayload RequestPayload
+
+	err := app.readJSON(w, r, &requestPayload)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	conn, err := grpc.Dial("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := logs.NewLogServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = c.WriteLog(ctx, &logs.LogRequest{
+		LogEntry: &logs.Log {
+			Name: requestPayload.Log.Name,
+			Data: requestPayload.Log.Data,
+		},
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "logged"
+
+	app.writeJSON(w, http.StatusAccepted, payload)
 }

@@ -20,6 +20,6 @@ RUN mkdir /app
 COPY --from=builder /app/loggerServiceApp /app/loggerServiceApp
 
 # Best practice: Inform Docker about the port
-EXPOSE 8082
+EXPOSE 8082 
 
 CMD [ "/app/loggerServiceApp" ]
